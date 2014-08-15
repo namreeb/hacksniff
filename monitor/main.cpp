@@ -20,14 +20,14 @@ extern "C" HADESMEM_DETAIL_DLLEXPORT DWORD Load()
 
     gLog.open(dir + "\\monitor.txt", std::fstream::out|std::fstream::app);
 
-    gMemorySniff = new MemorySniff();
+    MemorySniff::Init();
 
     return EXIT_SUCCESS;
 }
 
 extern "C" HADESMEM_DETAIL_DLLEXPORT DWORD Free()
 {
-    delete gMemorySniff;
+    MemorySniff::Deinit();
 
     return EXIT_SUCCESS;
 }

@@ -7,6 +7,11 @@ std::ofstream gLog;
 
 const std::string BufferToString(LPCVOID buffer, SIZE_T length)
 {
+    return BufferToString((LPCBYTE)buffer, length);
+}
+
+const std::string BufferToString(LPCBYTE buffer, SIZE_T length)
+{
     LPCBYTE b = (LPCBYTE)buffer;
     std::stringstream str;
 
