@@ -45,7 +45,7 @@ void MemorySniff::Init()
         f.FunctionPointer = &MemorySniff::ReadProcessMemoryHook;
 
         m_readProcessMemory.reset(new hadesmem::PatchDetour(process, readProcessMemory, f.func));
-        //m_readProcessMemory->Apply();
+        m_readProcessMemory->Apply();
     }
 }
 
@@ -75,9 +75,10 @@ BOOL WINAPI MemorySniff::WriteProcessMemoryHook(HANDLE hProcess, LPVOID lpBaseAd
         std::vector<BYTE> originalDataBuff(nSize);
         SIZE_T readSize;
 
-        //auto readMemoryTrampoline = m_readProcessMemory->GetTrampoline<BOOL(WINAPI *)(HANDLE, LPCVOID, LPVOID, SIZE_T, SIZE_T *)>();
+        auto readMemoryTrampoline = m_readProcessMemory->IsApplied() ?
+            m_readProcessMemory->GetTrampoline<BOOL(WINAPI *)(HANDLE, LPCVOID, LPVOID, SIZE_T, SIZE_T *)>() : &ReadProcessMemory;
 
-        if (ReadProcessMemory(newHandle, lpBaseAddress, &originalDataBuff[0], nSize, &readSize))
+        if ((*readMemoryTrampoline)(newHandle, lpBaseAddress, &originalDataBuff[0], nSize, &readSize))
             originalData = BufferToString(&originalDataBuff[0], readSize);
 
         // also give a warning if they didnt read as much as they wanted to
