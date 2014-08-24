@@ -1,3 +1,4 @@
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <hadesmem/patcher.hpp>
 #include <hadesmem/process.hpp>
 #include <hadesmem/module.hpp>
@@ -74,6 +75,8 @@ BOOL WINAPI MemorySniff::WriteProcessMemoryHook(HANDLE hProcess, LPVOID lpBaseAd
         std::vector<BYTE> originalDataBuff(nSize);
         SIZE_T readSize;
 
+        //auto readMemoryTrampoline = m_readProcessMemory->GetTrampoline<BOOL(WINAPI *)(HANDLE, LPCVOID, LPVOID, SIZE_T, SIZE_T *)>();
+
         if (ReadProcessMemory(newHandle, lpBaseAddress, &originalDataBuff[0], nSize, &readSize))
             originalData = BufferToString(&originalDataBuff[0], readSize);
 
@@ -92,7 +95,9 @@ BOOL WINAPI MemorySniff::WriteProcessMemoryHook(HANDLE hProcess, LPVOID lpBaseAd
     // only bother logging the write if we are changing the value of the memory.  this helps reduce spam in some cases.
     if (memoryChanged)
     {
-        gLog << "WriteProcessMemory(" << processName << ") 0x" << std::uppercase << std::hex << (unsigned long)lpBaseAddress
+        const boost::posix_time::ptime p = boost::posix_time::from_time_t(time(nullptr));
+
+        gLog << "[" << p << "]: WriteProcessMemory(" << processName << ") 0x" << std::uppercase << std::hex << (unsigned long)lpBaseAddress
              << " Size: " << std::dec << nSize << " Original data: " << originalData << " New data: " << BufferToString(lpBuffer, nSize);
 
         if (!ret)
@@ -139,7 +144,9 @@ BOOL WINAPI MemorySniff::ReadProcessMemoryHook(HANDLE hProcess, LPCVOID lpBaseAd
 
     if (memoryChanged)
     {
-        gLog << "ReadProcessMemory(" << processName << ") 0x" << std::uppercase << std::hex << (unsigned long)lpBaseAddress
+        const boost::posix_time::ptime p = boost::posix_time::from_time_t(time(nullptr));
+
+        gLog << "[" << p << "]: ReadProcessMemory(" << processName << ") 0x" << std::uppercase << std::hex << (unsigned long)lpBaseAddress
             << " Size: " << std::dec << nSize << " Data: " << BufferToString(lpBuffer, nSize);
 
         if (!ret)
