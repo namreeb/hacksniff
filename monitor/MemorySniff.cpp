@@ -16,7 +16,7 @@ void MemorySniff::Init()
     const hadesmem::Process process(::GetCurrentProcessId());
     const hadesmem::Module kernel32(process, L"kernel32.dll");
 
-    PVOID writeProcessMemory = hadesmem::FindProcedure(process, kernel32, "WriteProcessMemory");
+    PVOID writeProcessMemory = hadesmem::FindProcedure(process, kernel32, "NtWriteVirtualMemory");
 
     if (writeProcessMemory)
     {
@@ -32,7 +32,7 @@ void MemorySniff::Init()
         m_writeProcessMemory->Apply();
     }
 
-    PVOID readProcessMemory = hadesmem::FindProcedure(process, kernel32, "ReadProcessMemory");
+    PVOID readProcessMemory = hadesmem::FindProcedure(process, kernel32, "NtReadVirtualMemory");
 
     if (readProcessMemory)
     {
@@ -98,7 +98,7 @@ BOOL WINAPI MemorySniff::WriteProcessMemoryHook(HANDLE hProcess, LPVOID lpBaseAd
     {
         const boost::posix_time::ptime p = boost::posix_time::from_time_t(time(nullptr));
 
-        gLog << "[" << p << "]: WriteProcessMemory(" << processName << ") 0x" << std::uppercase << std::hex << (unsigned long)lpBaseAddress
+        gLog << "[" << p << "]: NtWriteVirtualMemory(" << processName << ") 0x" << std::uppercase << std::hex << (unsigned long)lpBaseAddress
              << " Size: " << std::dec << nSize << " Original data: " << originalData << " New data: " << BufferToString(lpBuffer, nSize);
 
         if (!ret)
@@ -147,7 +147,7 @@ BOOL WINAPI MemorySniff::ReadProcessMemoryHook(HANDLE hProcess, LPCVOID lpBaseAd
     {
         const boost::posix_time::ptime p = boost::posix_time::from_time_t(time(nullptr));
 
-        gLog << "[" << p << "]: ReadProcessMemory(" << processName << ") 0x" << std::uppercase << std::hex << (unsigned long)lpBaseAddress
+        gLog << "[" << p << "]: NtReadVirtualMemory(" << processName << ") 0x" << std::uppercase << std::hex << (unsigned long)lpBaseAddress
             << " Size: " << std::dec << nSize << " Data: " << BufferToString(lpBuffer, nSize);
 
         if (!ret)
