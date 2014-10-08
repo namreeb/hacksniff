@@ -1,3 +1,4 @@
+#include <array>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <hadesmem/patcher.hpp>
 #include <hadesmem/process.hpp>
@@ -66,11 +67,11 @@ BOOL WINAPI MemorySniff::WriteProcessMemoryHook(HANDLE hProcess, LPVOID lpBaseAd
 
     if (::DuplicateHandle(GetCurrentProcess(), hProcess, GetCurrentProcess(), &newHandle, PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, false, 0))
     {
-        char processNameBuff[256];
-        SIZE_T processNameLength = sizeof(processNameBuff);
+        std::array<char, MAX_PATH> processNameBuff;
+        SIZE_T processNameLength = processNameBuff.size();
 
-        if (::QueryFullProcessImageNameA(newHandle, 0, processNameBuff, &processNameLength))
-            processName = processNameBuff;
+        if (::QueryFullProcessImageNameA(newHandle, 0, processNameBuff.data(), &processNameLength))
+            processName = processNameBuff.data();
 
         std::vector<BYTE> originalDataBuff(nSize);
         SIZE_T readSize;
@@ -118,11 +119,11 @@ BOOL WINAPI MemorySniff::ReadProcessMemoryHook(HANDLE hProcess, LPCVOID lpBaseAd
 
     if (::DuplicateHandle(GetCurrentProcess(), hProcess, GetCurrentProcess(), &newHandle, PROCESS_QUERY_LIMITED_INFORMATION, false, 0))
     {
-        char processNameBuff[1024];
-        SIZE_T processNameLength = sizeof(processNameBuff);
+        std::array<char, MAX_PATH> processNameBuff;
+        SIZE_T processNameLength = processNameBuff.size();
 
-        if (::QueryFullProcessImageNameA(newHandle, 0, processNameBuff, &processNameLength))
-            processName = processNameBuff;
+        if (::QueryFullProcessImageNameA(newHandle, 0, processNameBuff.data(), &processNameLength))
+            processName = processNameBuff.data();
     }
 
     auto const trampoline = m_readProcessMemory->GetTrampoline<BOOL(WINAPI *)(HANDLE, LPCVOID, LPVOID, SIZE_T, SIZE_T *)>();

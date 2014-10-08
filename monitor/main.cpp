@@ -1,3 +1,4 @@
+#include <array>
 #include <Windows.h>
 #include <boost/filesystem.hpp>
 #include <hadesmem/config.hpp>
@@ -11,12 +12,12 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 extern "C" HADESMEM_DETAIL_DLLEXPORT DWORD Load()
 {
-    char filename[1024];
+    std::array<char, MAX_PATH> filename;
 
-    if (!GetModuleFileName((HMODULE)&__ImageBase, filename, sizeof(filename)))
+    if (!GetModuleFileName((HMODULE)&__ImageBase, filename.data(), sizeof(filename)))
         return EXIT_FAILURE;
 
-    std::string dir = boost::filesystem::path(filename).parent_path().string();
+    std::string dir = boost::filesystem::path(filename.data()).parent_path().string();
 
     gLog.open(dir + "\\monitor.txt", std::fstream::out|std::fstream::app);
 
