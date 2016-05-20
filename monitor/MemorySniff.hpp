@@ -1,24 +1,27 @@
 #pragma once
 
-#include <Windows.h>
 #include <map>
+
+#include <Windows.h>
 
 #include <hadesmem/patcher.hpp>
 
 class MemorySniff
 {
     public:
-        static void Init();
-        static void Deinit();
+        MemorySniff();
+
+        using WriteProcessMemoryT = BOOL(WINAPI *)(HANDLE, LPVOID, LPCVOID, SIZE_T, SIZE_T *);
+        using ReadProcessMemoryT = BOOL(WINAPI *)(HANDLE, LPCVOID, LPVOID, SIZE_T, SIZE_T *);
 
     private:
-        static std::unique_ptr<hadesmem::PatchDetour> m_writeProcessMemory;
-        static std::unique_ptr<hadesmem::PatchDetour> m_readProcessMemory;
-
-        static BOOL WINAPI WriteProcessMemoryHook(HANDLE, LPVOID, LPCVOID, SIZE_T, SIZE_T *);
-        static BOOL WINAPI ReadProcessMemoryHook(HANDLE, LPCVOID, LPVOID, SIZE_T, SIZE_T *);
+        BOOL WriteProcessMemoryHook(hadesmem::PatchDetourBase *, HANDLE, LPVOID, LPCVOID, SIZE_T, SIZE_T *);
+        BOOL ReadProcessMemoryHook(hadesmem::PatchDetourBase *, HANDLE, LPCVOID, LPVOID, SIZE_T, SIZE_T *);
 
         typedef std::pair<LPCVOID, SIZE_T> LogEntryIndex;
 
-        static std::map<LogEntryIndex, std::vector<BYTE>> m_readLog;
+        std::unique_ptr<hadesmem::PatchDetour<WriteProcessMemoryT>> m_writeProcessMemory;
+        std::unique_ptr<hadesmem::PatchDetour<ReadProcessMemoryT>> m_readProcessMemory;
+
+        std::map<LogEntryIndex, std::vector<BYTE>> m_readLog;
 };
