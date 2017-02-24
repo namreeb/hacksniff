@@ -1,14 +1,34 @@
-#include <array>
+/*
+*  hacksniff - a tool for monitoring how a target process interacts with another process
+*
+*  Copyright (C) 2017 namreeb legal@namreeb.org http://github.com/namreeb
+*
+*  This program is free software; you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation; either version 2 of the License, or
+*  (at your option) any later version.
+*
+*  This program is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License along
+*  with this program; if not, write to the Free Software Foundation, Inc.,
+*  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include "MemorySniff.hpp"
+#include "Log.hpp"
 
 #include <hadesmem/patcher.hpp>
 #include <hadesmem/process.hpp>
 #include <hadesmem/module.hpp>
 #include <hadesmem/find_procedure.hpp>
 
-#include "MemorySniff.hpp"
-#include "Log.hpp"
+#include <boost/date_time/posix_time/posix_time.hpp>
+
+#include <array>
 
 MemorySniff::MemorySniff()
 {
@@ -48,7 +68,7 @@ MemorySniff::MemorySniff()
     }
 }
 
-BOOL MemorySniff::WriteProcessMemoryHook(hadesmem::PatchDetourBase *detour, HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, SIZE_T *lpNumberOfBytesWritten)
+BOOL MemorySniff::WriteProcessMemoryHook(hadesmem::PatchDetourBase *detour, HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, SIZE_T *lpNumberOfBytesWritten) const
 {
     HANDLE newHandle;
 
@@ -60,7 +80,7 @@ BOOL MemorySniff::WriteProcessMemoryHook(hadesmem::PatchDetourBase *detour, HAND
     if (::DuplicateHandle(GetCurrentProcess(), hProcess, GetCurrentProcess(), &newHandle, PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, false, 0))
     {
         std::array<char, MAX_PATH> processNameBuff;
-        SIZE_T processNameLength = processNameBuff.size();
+        DWORD processNameLength = static_cast<DWORD>(processNameBuff.size());
 
         if (::QueryFullProcessImageNameA(newHandle, 0, processNameBuff.data(), &processNameLength))
             processName = processNameBuff.data();
@@ -90,7 +110,7 @@ BOOL MemorySniff::WriteProcessMemoryHook(hadesmem::PatchDetourBase *detour, HAND
     {
         auto const p = boost::posix_time::from_time_t(time(nullptr));
 
-        gLog << "[" << p << "]: NtWriteVirtualMemory(" << processName << ") 0x" << std::uppercase << std::hex << reinterpret_cast<unsigned long>(lpBaseAddress)
+        gLog << "[" << p << "]: NtWriteVirtualMemory(" << processName << ") 0x" << std::uppercase << std::hex << lpBaseAddress
              << " Size: " << std::dec << nSize << " Original data: " << originalData << " New data: " << BufferToString(lpBuffer, nSize);
 
         if (!ret)
@@ -111,7 +131,7 @@ BOOL MemorySniff::ReadProcessMemoryHook(hadesmem::PatchDetourBase *detour, HANDL
     if (::DuplicateHandle(GetCurrentProcess(), hProcess, GetCurrentProcess(), &newHandle, PROCESS_QUERY_LIMITED_INFORMATION, false, 0))
     {
         std::array<char, MAX_PATH> processNameBuff;
-        SIZE_T processNameLength = processNameBuff.size();
+        DWORD processNameLength = static_cast<DWORD>(processNameBuff.size());
 
         if (::QueryFullProcessImageNameA(newHandle, 0, processNameBuff.data(), &processNameLength))
             processName = processNameBuff.data();
@@ -137,7 +157,7 @@ BOOL MemorySniff::ReadProcessMemoryHook(hadesmem::PatchDetourBase *detour, HANDL
     {
         auto const p = boost::posix_time::from_time_t(time(nullptr));
 
-        gLog << "[" << p << "]: NtReadVirtualMemory(" << processName << ") 0x" << std::uppercase << std::hex << reinterpret_cast<unsigned long>(lpBaseAddress)
+        gLog << "[" << p << "]: NtReadVirtualMemory(" << processName << ") 0x" << std::uppercase << std::hex << lpBaseAddress
             << " Size: " << std::dec << nSize << " Data: " << BufferToString(lpBuffer, nSize);
 
         if (!ret)
